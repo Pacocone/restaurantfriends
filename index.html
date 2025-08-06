@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Mis Restaurantes</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<meta name="theme-color" content="#ff6d00">
+<script defer src="countries.js"></script>
+<script defer src="searchable-select.js"></script>
+<script defer src="country-typing.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script><script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="firebase-config.js"></script>
+<script defer src="script.js"></script>
+
+</head>
+<body>
+
+<div id="authView" class="auth-overlay hidden">
+  <div class="auth-card card">
+    <h2 id="authTitle">Iniciar sesión</h2>
+    <label id="labelEmail">Correo</label>
+    <input id="authEmail" type="email" placeholder="tu@correo.com" autocomplete="email">
+    <label id="labelPassword">Contraseña</label>
+    <input id="authPassword" type="password" placeholder="••••••••" autocomplete="current-password">
+    <div class="auth-actions">
+      <button id="btnRegister">Crear cuenta</button>
+      <button id="btnLogin">Entrar</button>
+    </div>
+    <button id="btnReset" class="linklike">¿Olvidaste la contraseña?</button>
+    <div id="authMsg" class="muted"></div>
+  </div>
+</div>
+<div id="usernameModal" class="modal hidden">
+  <div class="card">
+    <h3 id="usernameTitle">Elige tu nombre de usuario</h3>
+    <input id="usernameInput" placeholder="Tu nombre de usuario">
+    <div class="auth-actions">
+      <button id="btnSaveUsername">Guardar</button>
+    </div>
+    <div id="usernameMsg" class="muted"></div>
+  </div>
+</div>
+
+<header class="safe-area">
+  <h1 id="titleApp">🍽️ Mis Restaurantes</h1>
+  <div class="top-buttons" style="display:flex;gap:0.5rem;">
+    <button id="langEs" title="Español" style="font-size:2rem;">🇪🇸</button>
+    <button id="langEn" title="English" style="font-size:2rem;">🇬🇧</button>
+    <button id="themeToggleLight" title="Modo diurno">☀️</button>
+    <button id="themeToggleDark" title="Modo noche">🌙</button>
+      <button id="btnLogout" title="Salir">🚪</button>
+  </div>
+</header>
+<nav id="navTabs">
+  <button data-tab="add" class="active">➕ Añadir visita</button>
+  <button data-tab="summary">📊 Resumen</button>
+  <button data-tab="history">📜 Historial</button>
+  <button data-tab="explore">🌍 Explorar</button>
+  <button data-tab="friends">👥 Amigos</button>
+</nav>
+<main id="appView">
+  <section id="tab-add" class="tab active">
+    <form id="visitForm">
+      <label id="labelName" for="vName">Restaurante 🍴</label>
+      <input id="vName" required>
+      <label id="labelCity" for="vCity">Ciudad 🏙️</label>
+      <input id="vCity" required>
+      <label id="labelCountry">País 🌎</label>
+      <select id="vCountry" required data-searchable="true" placeholder="Escribe un país / Type a country"></select>
+      <label id="labelDate" for="vDate">Fecha 📅</label>
+      <input id="vDate" type="date" required>
+      <label for="vDiners" id="labelDiners">Número de comensales 👥</label>
+      <input id="vDiners" type="number" min="1" required>
+      <label for="vTotal" id="labelTotal">Precio total 💰</label>
+      <div class="price-row">
+        <input id="vTotal" type="number" min="0" step="0.01" required>
+        <select id="currencySelect" class="small-select">
+          <option value="€">€</option>
+          <option value="£">£</option>
+          <option value="$">$</option>
+          <option value="د.إ">د.إ</option>
+          <option value="¥">¥</option>
+          <option value="元">元</option>
+        </select>
+      </div>
+      <label for="vAvg" id="labelAvg">Precio medio por comensal ⚖️</label>
+      <input id="vAvg" type="text" readonly>
+      <label for="vNotes" id="labelNotes">Observaciones 📝</label>
+      <textarea id="vNotes"></textarea>
+      <label id="labelTicket">Ticket 📷</label>
+      <input type="file" id="ticketInput" accept="image/*">
+      <div id="ticketPreview" class="hidden">
+        <img id="ticketImage" src="" alt="Ticket">
+        <span id="removeTicket" class="trash-icon">🗑️</span>
+      </div>
+      <label id="labelRating">Valoración ⭐</label>
+      <div id="stars">
+        <span data-value="1">☆</span>
+        <span data-value="2">☆</span>
+        <span data-value="3">☆</span>
+        <span data-value="4">☆</span>
+        <span data-value="5">☆</span>
+      </div>
+      <input type="hidden" id="vRating" value="0">
+      <button type="submit" class="glow-button">Guardar visita</button>
+    </form>
+  </section>
+  <section id="tab-summary" class="tab"><div id="summary"></div></section>
+  <section id="tab-history" class="tab"><label id="labelFilter">Filtrar por restaurante 🍽️</label><select id="histFilter"></select><div id="history"></div></section>
+  <section id="tab-explore" class="tab"><label id="labelCitySel">Selecciona ciudad 🌍</label><select id="cityFilter"></select><label id="labelUserSel">Selecciona usuario 👤</label><select id="friendExplore"></select>
+<label id="labelCountrySel">Selecciona país 🌎</label><select id="countryFilter" data-searchable="true" placeholder="Escribe un país / Type a country"></select>
+<label id="labelSearch">Buscar restaurante 🔎</label><input type="text" id="searchInput" placeholder="Escribe el nombre"><div id="explore"></div></section>
+  <section id="tab-friends" class="tab"><label id="labelFriendSel">Selecciona amigo 🤝</label><select id="friendSelect"></select><div id="friendView"></div></section>
+</main>
+</body>
+</html>
