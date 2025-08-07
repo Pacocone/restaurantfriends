@@ -1,3 +1,35 @@
+
+// === Firebase init ===
+try{
+  if(window.FIREBASE_CONFIG && (!firebase.apps || !firebase.apps.length)){
+    firebase.initializeApp(window.FIREBASE_CONFIG);
+  }
+}catch(e){ console.warn('Firebase init error', e); }
+const auth = (typeof firebase!=='undefined' && firebase.auth) ? firebase.auth() : null;
+const db   = (typeof firebase!=='undefined' && firebase.firestore) ? firebase.firestore() : null;
+
+// === Auth UI helpers ===
+function showAuth(show){
+  const authView=document.getElementById('authView');
+  const appView=document.getElementById('appView');
+  if(!authView||!appView) return;
+  if(show){ authView.classList.remove('hidden'); appView.classList.add('hidden'); }
+  else    { authView.classList.add('hidden'); appView.classList.remove('hidden'); }
+}
+function askUsername(onSave){
+  const modal=document.getElementById('usernameModal');
+  const input=document.getElementById('usernameInput');
+  const msg=document.getElementById('usernameMsg');
+  if(!modal||!input) return;
+  msg.textContent='';
+  modal.classList.remove('hidden');
+  document.getElementById('btnSaveUsername').onclick=async ()=>{
+    const u = (input.value||'').trim();
+    if(u.length<3){ msg.textContent = 'Mínimo 3 caracteres'; return; }
+    try{ await onSave(u); modal.classList.add('hidden'); }catch(e){ msg.textContent = e.message||String(e); }
+  };
+}
+
 let visits = JSON.parse(localStorage.getItem('visits')||'[]');
 function saveVisits(){localStorage.setItem('visits',JSON.stringify(visits));}
 function formatTitle(str){return str.toLowerCase().replace(/(^|\s)\S/g,l=>l.toUpperCase());}
@@ -195,3 +227,134 @@ function saveVisitToFirestore(visit){
     .then(()=>console.log('Saved to Firestore'))
     .catch(console.error);
 }
+
+
+// === Auth wiring ===
+document.addEventListener('DOMContentLoaded',()=>{
+  const email = document.getElementById('authEmail');
+  const pass  = document.getElementById('authPassword');
+  const msg   = document.getElementById('authMsg');
+
+  function say(m){ if(msg) msg.textContent = m||''; }
+
+  if(document.getElementById('btnRegister')){
+    document.getElementById('btnRegister').addEventListener('click', async ()=>{
+      if(!auth){ showAuth(false); return; } // fallback
+      try{
+        const cred = await auth.createUserWithEmailAndPassword((email.value||'').trim(), pass.value||'');
+        say('Cuenta creada');
+      }catch(e){
+        if(e && e.code==='auth/email-already-in-use'){
+          try{
+            await auth.signInWithEmailAndPassword((email.value||'').trim(), pass.value||'');
+            say('Sesión iniciada');
+          }catch(e2){ say(e2.message||String(e2)); }
+        }else{
+          say(e.message||String(e));
+        }
+      }
+    });
+  }
+  if(document.getElementById('btnLogin')){
+    document.getElementById('btnLogin').addEventListener('click', async ()=>{
+      if(!auth){ showAuth(false); return; }
+      try{
+        await auth.signInWithEmailAndPassword((email.value||'').trim(), pass.value||'');
+        say('Sesión iniciada');
+      }catch(e){ say(e.message||String(e)); }
+    });
+  }
+  if(document.getElementById('btnReset')){
+    document.getElementById('btnReset').addEventListener('click', async ()=>{
+      if(!auth){ say(''); return; }
+      try{ await auth.sendPasswordResetEmail((email.value||'').trim()); say('Email de restablecimiento enviado'); }
+      catch(e){ say(e.message||String(e)); }
+    });
+  }
+  if(document.getElementById('btnLogout')){
+    document.getElementById('btnLogout').addEventListener('click', async ()=>{
+      if(auth){ await auth.signOut(); }
+    });
+  }
+
+  if(auth){
+    auth.onAuthStateChanged(async (user)=>{
+      if(user){
+        // Ensure username document
+        try{
+          if(db){
+            const ref = db.collection('users').doc(user.uid);
+            const snap = await ref.get();
+            if(!snap.exists || !snap.data() || !snap.data().username){
+              askUsername(async (uname)=>{
+                await ref.set({ email:user.email, username: uname, createdAt: new Date() }, { merge:true });
+              });
+            }
+          }
+        }catch(e){ console.warn('Username check error', e); }
+        showAuth(false);
+      }else{
+        showAuth(true);
+      }
+    });
+  }else{
+    // No Firebase => show app
+    showAuth(false);
+  }
+});
+
+// Hook auth labels into applyLang if it exists
+(function(){
+  const prevApply = window.applyLang;
+  window.applyLang = function(lang){
+    if(prevApply) prevApply(lang);
+    const t=(es,en)=>lang==='en'?en:es;
+    const set=(id,es,en)=>{ const el=document.getElementById(id); if(el) el.textContent=t(es,en); };
+    set('authTitle','Iniciar sesión','Sign in');
+    set('labelEmail','Correo','Email');
+    set('labelPassword','Contraseña','Password');
+    set('labelRegUsername','Nombre de usuario','Username');
+    const btnR=document.getElementById('btnRegister'); if(btnR) btnR.textContent=t('Crear cuenta','Create account');
+    const btnL=document.getElementById('btnLogin'); if(btnL) btnL.textContent=t('Entrar','Sign in');
+    const btnF=document.getElementById('btnReset'); if(btnF) btnF.textContent=t('¿Olvidaste la contraseña?','Forgot password?');
+    const uTitle=document.getElementById('usernameTitle'); if(uTitle) uTitle.textContent=t('Elige tu nombre de usuario','Choose your username');
+    const uIn=document.getElementById('usernameInput'); if(uIn) uIn.placeholder=t('Tu nombre de usuario','Your username');
+    const uBtn=document.getElementById('btnSaveUsername'); if(uBtn) uBtn.textContent=t('Guardar','Save');
+    const lo=document.getElementById('btnLogout'); if(lo) lo.title=t('Salir','Sign out');
+  };
+  // call with stored lang to refresh labels
+  try{ window.applyLang(localStorage.getItem('lang')||'es'); }catch(_){}
+})();
+
+// === Username inline registration ===
+document.addEventListener('DOMContentLoaded',()=>{
+  const btnRegister = document.getElementById('btnRegister');
+  const btnLogin = document.getElementById('btnLogin');
+  const authCard = document.querySelector('.auth-card');
+  const emailEl = document.getElementById('authEmail');
+  const passEl  = document.getElementById('authPassword');
+  const userEl  = document.getElementById('authUsername');
+  const msgEl   = document.getElementById('authMsg');
+  const t=(es,en)=> (localStorage.getItem('lang')||'es')==='en'? en : es;
+
+  btnRegister?.addEventListener('mouseenter', ()=> authCard?.classList.add('reg-mode'));
+  btnLogin?.addEventListener('mouseenter', ()=> authCard?.classList.remove('reg-mode'));
+
+  btnRegister?.addEventListener('click', async ()=>{
+    authCard?.classList.add('reg-mode');
+    if(!auth || !db){ msgEl.textContent='Sin Firebase'; return; }
+    const email=(emailEl.value||'').trim();
+    const pwd = passEl.value||'';
+    const uname=(userEl.value||'').trim();
+    if(uname.length<3){ msgEl.textContent=t('Nombre de usuario mínimo 3 caracteres','Username min 3 chars'); return;}
+    try{
+      const q = await db.collection('users').where('username','==',uname).limit(1).get();
+      if(!q.empty){ msgEl.textContent=t('Ese nombre ya está en uso','Username already taken'); return; }
+      const cred = await auth.createUserWithEmailAndPassword(email,pwd);
+      await db.collection('users').doc(cred.user.uid).set({ email, username:uname, createdAt:new Date() }, { merge:true });
+      msgEl.textContent=t('Cuenta creada','Account created');
+    }catch(e){ msgEl.textContent=e.message||String(e); }
+  });
+
+  btnLogin?.addEventListener('click', ()=> authCard?.classList.remove('reg-mode'));
+});

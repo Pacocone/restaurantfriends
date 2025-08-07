@@ -10,15 +10,43 @@
 <script defer src="countries.js"></script>
 <script defer src="searchable-select.js"></script>
 <script defer src="country-typing.js"></script>
-<script defer src="script.js"></script>
-
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script><script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 <script src="firebase-config.js"></script>
+<script defer src="script.js"></script>
 
 </head>
 <body>
+
+<div id="authView" class="auth-overlay hidden">
+  <div class="auth-card card">
+    <h2 id="authTitle">Iniciar sesión</h2>
+    <label id="labelEmail">Correo</label>
+    <input id="authEmail" type="email" placeholder="tu@correo.com" autocomplete="email">
+    <label id="labelPassword">Contraseña</label>
+    <label id="labelPassword">Contraseña</label>
+    <input id="authUsername" type="text" placeholder="Tu nombre de usuario" autocomplete="username">
+    <input id="authPassword" type="password" placeholder="••••••••" autocomplete="current-password">
+    <div class="auth-actions">
+      <button id="btnRegister">Crear cuenta</button>
+      <button id="btnLogin">Entrar</button>
+    </div>
+    <button id="btnReset" class="linklike">¿Olvidaste la contraseña?</button>
+    <div id="authMsg" class="muted"></div>
+  </div>
+</div>
+<div id="usernameModal" class="modal hidden">
+  <div class="card">
+    <h3 id="usernameTitle">Elige tu nombre de usuario</h3>
+    <input id="usernameInput" placeholder="Tu nombre de usuario">
+    <div class="auth-actions">
+      <button id="btnSaveUsername">Guardar</button>
+    </div>
+    <div id="usernameMsg" class="muted"></div>
+  </div>
+</div>
+
 <header class="safe-area">
   <h1 id="titleApp">🍽️ Mis Restaurantes</h1>
   <div class="top-buttons" style="display:flex;gap:0.5rem;">
@@ -26,6 +54,7 @@
     <button id="langEn" title="English" style="font-size:2rem;">🇬🇧</button>
     <button id="themeToggleLight" title="Modo diurno">☀️</button>
     <button id="themeToggleDark" title="Modo noche">🌙</button>
+      <button id="btnLogout" title="Salir">🚪</button>
   </div>
 </header>
 <nav id="navTabs">
@@ -35,7 +64,7 @@
   <button data-tab="explore">🌍 Explorar</button>
   <button data-tab="friends">👥 Amigos</button>
 </nav>
-<main>
+<main id="appView">
   <section id="tab-add" class="tab active">
     <form id="visitForm">
       <label id="labelName" for="vName">Restaurante 🍴</label>
