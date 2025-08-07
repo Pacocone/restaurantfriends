@@ -313,7 +313,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     set('authTitle','Iniciar sesión','Sign in');
     set('labelEmail','Correo','Email');
     set('labelPassword','Contraseña','Password');
-    set('labelRegUsername','Nombre de usuario','Username');
     const btnR=document.getElementById('btnRegister'); if(btnR) btnR.textContent=t('Crear cuenta','Create account');
     const btnL=document.getElementById('btnLogin'); if(btnL) btnL.textContent=t('Entrar','Sign in');
     const btnF=document.getElementById('btnReset'); if(btnF) btnF.textContent=t('¿Olvidaste la contraseña?','Forgot password?');
@@ -325,36 +324,3 @@ document.addEventListener('DOMContentLoaded',()=>{
   // call with stored lang to refresh labels
   try{ window.applyLang(localStorage.getItem('lang')||'es'); }catch(_){}
 })();
-
-// === Username inline registration ===
-document.addEventListener('DOMContentLoaded',()=>{
-  const btnRegister = document.getElementById('btnRegister');
-  const btnLogin = document.getElementById('btnLogin');
-  const authCard = document.querySelector('.auth-card');
-  const emailEl = document.getElementById('authEmail');
-  const passEl  = document.getElementById('authPassword');
-  const userEl  = document.getElementById('authUsername');
-  const msgEl   = document.getElementById('authMsg');
-  const t=(es,en)=> (localStorage.getItem('lang')||'es')==='en'? en : es;
-
-  btnRegister?.addEventListener('mouseenter', ()=> authCard?.classList.add('reg-mode'));
-  btnLogin?.addEventListener('mouseenter', ()=> authCard?.classList.remove('reg-mode'));
-
-  btnRegister?.addEventListener('click', async ()=>{
-    authCard?.classList.add('reg-mode');
-    if(!auth || !db){ msgEl.textContent='Sin Firebase'; return; }
-    const email=(emailEl.value||'').trim();
-    const pwd = passEl.value||'';
-    const uname=(userEl.value||'').trim();
-    if(uname.length<3){ msgEl.textContent=t('Nombre de usuario mínimo 3 caracteres','Username min 3 chars'); return;}
-    try{
-      const q = await db.collection('users').where('username','==',uname).limit(1).get();
-      if(!q.empty){ msgEl.textContent=t('Ese nombre ya está en uso','Username already taken'); return; }
-      const cred = await auth.createUserWithEmailAndPassword(email,pwd);
-      await db.collection('users').doc(cred.user.uid).set({ email, username:uname, createdAt:new Date() }, { merge:true });
-      msgEl.textContent=t('Cuenta creada','Account created');
-    }catch(e){ msgEl.textContent=e.message||String(e); }
-  });
-
-  btnLogin?.addEventListener('click', ()=> authCard?.classList.remove('reg-mode'));
-});
