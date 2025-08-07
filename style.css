@@ -76,12 +76,3 @@ html[data-theme='light'] #navTabs button.active{background:#ff6d00;color:#fff;}
 /* Ensure searchable input is interactive and above native select */
 .ss-wrapper .ss-input{position:relative; z-index:2; pointer-events:auto;}
 select.ss-hidden{position:absolute !important; left:-9999px !important; top:auto !important;}
-
-/* Auth overlay & modal */
-.hidden{display:none!important}
-.auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:9999}
-.auth-card{max-width:420px;width:92%;padding:16px}
-.auth-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem}
-.linklike{background:none;border:none;color:#ff6d00;cursor:pointer;padding:6px}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:10000}
-.modal .card{max-width:420px;width:92%;padding:16px}
